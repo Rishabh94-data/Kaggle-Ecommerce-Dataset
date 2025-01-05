@@ -1,0 +1,70 @@
+import pandas as pd
+
+# Load dataset
+file_path = "Kaggle-Ecommerce.xlsx"  # Replace with the exact name of your uploaded file
+kaggle_data = pd.read_excel(file_path)
+
+# Inspect the dataset
+print(kaggle_data.info())  # Show dataset information
+print(kaggle_data.head())  # Preview the first few rows
+---------------------------------------------------------------------------------------------------------------------------------------
+import matplotlib.pyplot as plt
+
+kaggle_data['Sales'].hist(bins=20)
+plt.title('Sales Distribution')
+plt.xlabel('Sales')
+plt.ylabel('Frequency')
+plt.show()
+-------------------------------------------------------------------------------------------------------------------------------------------
+import seaborn as sns
+
+correlation_matrix = kaggle_data[['Sales', 'Profit', 'Discount', 'Shipping_Cost']].corr()
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
+plt.title('Correlation Heatmap')
+plt.show()
+----------------------------------------------------------------------------------------------------------------------------------------------
+sns.countplot(data=kaggle_data, x='Device_Type')
+plt.title('Device Usage Distribution')
+plt.show()
+------------------------------------------------------------------------------------------------------------------------------------------
+pd.crosstab(kaggle_data['Device_Type'], kaggle_data['Gender']).plot(kind='bar', stacked=True)
+plt.title('Device Usage by Gender')
+plt.show()
+---------------------------------------------------------------------------------------------------------------------------------------------
+from scipy.stats import ttest_ind
+
+# Drop missing values for Sales
+male_sales = kaggle_data[kaggle_data['Gender'] == 'Male']['Sales'].dropna()
+female_sales = kaggle_data[kaggle_data['Gender'] == 'Female']['Sales'].dropna()
+
+# Perform T-test
+t_stat, p_value = ttest_ind(male_sales, female_sales)
+print(f"T-statistic: {t_stat}, P-value: {p_value}")
+------------------------------------------------------------------------------------------------------------------------------------------------
+from scipy.stats import f_oneway
+
+category_groups = [group['Profit'] for _, group in kaggle_data.groupby('Product_Category')]
+f_stat, p_value = f_oneway(*category_groups)
+print(f"F-statistic: {f_stat}, P-value: {p_value}")
+--------------------------------------------------------------------------------------------------------------------------------------------------
+import statsmodels.api as sm
+
+# Select relevant columns (independent variables and dependent variable)
+relevant_columns = ['Sales', 'Discount', 'Shipping_Cost', 'Profit']
+
+# Drop rows with missing values across these columns
+cleaned_data = kaggle_data[relevant_columns].dropna()
+
+# Separate independent variables (X) and dependent variable (y)
+X = cleaned_data[['Sales', 'Discount', 'Shipping_Cost']]
+y = cleaned_data['Profit']
+
+# Add constant for intercept
+X = sm.add_constant(X)
+
+# Fit OLS regression model
+model = sm.OLS(y, X).fit()
+
+# Print regression summary
+print(model.summary())
+----------------------------------------------------------------------------------------------------------------------------------------------------
