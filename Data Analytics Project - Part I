@@ -68,3 +68,102 @@ model = sm.OLS(y, X).fit()
 # Print regression summary
 print(model.summary())
 ----------------------------------------------------------------------------------------------------------------------------------------------------
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import ttest_ind, f_oneway
+import statsmodels.api as sm
+
+# Load the Kaggle dataset
+file_path = "Kaggle-Ecommerce.xlsx"  # Replace with your dataset path
+kaggle_data = pd.read_excel(file_path)
+
+# Data preparation for analysis
+# Ensuring no missing values in relevant columns
+kaggle_data.dropna(subset=['Sales', 'Profit', 'Discount', 'Shipping_Cost', 'Product_Category', 'Gender'], inplace=True)
+
+# 1. Sales Trends Over Time
+sales_trend = kaggle_data.groupby([kaggle_data['Order_Date'].dt.month, 'Product_Category'])['Sales'].sum().unstack()
+sales_trend.plot(kind='line', marker='o', figsize=(10, 6))
+plt.title('Sales Trends Over Time')
+plt.xlabel('Month')
+plt.ylabel('Sales')
+plt.legend(title='Product Category')
+plt.grid()
+plt.show()
+------------------------------------------------------------------------------------------------------------------------------
+# 2. Profitability by Product Category
+profit_by_category = kaggle_data.groupby('Product_Category')['Profit'].sum().sort_values()
+profit_by_category.plot(kind='bar', color='skyblue', figsize=(8, 5))
+plt.title('Profitability by Product Category')
+plt.xlabel('Product Category')
+plt.ylabel('Total Profit')
+plt.grid(axis='y')
+plt.show()
+-----------------------------------------------------------------------------------------------------------------------------
+# 3. Impact of Discounts on Sales Volume
+sns.scatterplot(data=kaggle_data, x='Discount', y='Sales', hue='Product_Category', alpha=0.6, palette='cool')
+plt.title('Impact of Discounts on Sales Volume')
+plt.xlabel('Discount (%)')
+plt.ylabel('Sales')
+plt.legend(title='Product Category')
+plt.grid()
+plt.show()
+------------------------------------------------------------------------------------------------------------------------------
+import pandas as pd
+import numpy as np
+import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+
+# Prepare the dataset for regression (excluding 'Discount')
+regression_columns = ['Sales', 'Shipping_Cost', 'Profit']
+regression_data = kaggle_data[regression_columns].dropna()
+
+# Separate independent variables (X) and dependent variable (y)
+X = regression_data[['Sales', 'Shipping_Cost']]  # Exclude 'Discount'
+y = regression_data['Profit']
+
+# Add a constant to the independent variables
+X = sm.add_constant(X)
+
+# Check for multicollinearity using VIF
+vif_data = pd.DataFrame()
+vif_data["Feature"] = X.columns
+vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+print("Variance Inflation Factor (VIF):")
+print(vif_data)
+
+# Fit the regression model
+model = sm.OLS(y, X).fit()
+
+# Print the regression summary
+print("\nRegression Model Summary:")
+print(model.summary())
+
+# Optional: Visualization of regression diagnostics
+import matplotlib.pyplot as plt
+fig = sm.graphics.plot_regress_exog(model, "Sales", fig=plt.figure(figsize=(12, 8)))
+plt.show()
+
+fig = sm.graphics.plot_regress_exog(model, "Shipping_Cost", fig=plt.figure(figsize=(12, 8)))
+plt.show()
+--------------------------------------------------------------------------------------------------------------------------------
+from scipy.stats import ttest_ind
+
+# Drop missing values for Sales
+male_sales = kaggle_data[kaggle_data['Gender'] == 'Male']['Sales'].dropna()
+female_sales = kaggle_data[kaggle_data['Gender'] == 'Female']['Sales'].dropna()
+
+# Perform T-Test
+t_stat, p_value = ttest_ind(male_sales, female_sales)
+print(f"T-statistic: {t_stat}, P-value: {p_value}")
+------------------------------------------------------------------------------------------------------------------------------
+from scipy.stats import f_oneway
+
+# Group profits by product category
+category_groups = [group['Profit'] for _, group in kaggle_data.groupby('Product_Category')]
+
+# Perform ANOVA
+f_stat, p_value = f_oneway(*category_groups)
+print(f"F-statistic: {f_stat}, P-value: {p_value}")
+-------------------------------------------------------------------------------------------------------------------------------
